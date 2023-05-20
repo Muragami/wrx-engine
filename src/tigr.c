@@ -154,6 +154,11 @@ typedef struct {
 
 // ----------------------------------------------------------
 // WRX added code for windows, extra
+// wrx additions
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, Tigr *w);
+void tigrGAPINewTexture(Tigr* bmp);
+void tigrGAPIUpdateTexture(Tigr* bmp);
+void tigrGAPIDeleteTexture(Tigr* bmp);
 
 void tigrResizeWindowTable(Tigr* bmp, int cnt) {
     winTable *p = NULL;
@@ -191,8 +196,8 @@ Tigr *tigrWindow(int w, int h) {
     Tigr *p;
 
     p = tigrBitmap(w, h);
-
-
+    tigrGAPINewTexture(p);
+    p->flags = TIGR_WINDOW | TIGR_UPDATED;
 
     return p;
 }
@@ -206,11 +211,7 @@ void tigrGAPIDestroy(Tigr* bmp);
 int tigrGAPIBegin(Tigr* bmp);
 int tigrGAPIEnd(Tigr* bmp);
 void tigrGAPIPresent(Tigr* bmp, int w, int h);
-// wrx additions
-void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp, int x1, int y1, int x2, int y2);
-void tigrGAPINewTexture(Tigr* bmp);
-void tigrGAPIUpdateTexture(Tigr* bmp);
-void tigrGAPIDeleteTexture(Tigr* bmp);
+
 
 #endif
 
@@ -6225,14 +6226,15 @@ void tigrGAPIDestroy(Tigr* bmp) {
     }
 }
 
-void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp, int x1, int y1, int x2, int y2) {
-    glBindTexture(GL_TEXTURE_2D, tex);
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, Tigr* w) {
+    glBindTexture(GL_TEXTURE_2D, w->texId);
     
+    glColor4ub(w->winColor.r, w->winColor.g, w->winColor.b, w->winColor.a);
     if (!legacy) {
-        float sx = (float)(x2 - x1);
-        float sy = (float)(y2 - y1);
-        float tx = (float)x1;
-        float ty = (float)y1;
+        float sx = (float)w->w;
+        float sy = (float)w->h;
+        float tx = (float)w->winX;
+        float ty = (float)w->winY;
 
         float model[16] = { sx, 0.0f, 0.0f, 0.0f, 0.0f, sy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, tx, ty, 0.0f, 1.0f };
 
@@ -6242,17 +6244,18 @@ void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp,
 #if !(__APPLE__ || __ANDROID__)
         glBegin(GL_QUADS);
         glTexCoord2f(1.0f, 0.0f);
-        glVertex2i(x2, y1);
+        glVertex2i(w->winX + w->w, w->winY);
         glTexCoord2f(0.0f, 0.0f);
-        glVertex2i(x1, y1);
+        glVertex2i(w->winX, w->winY);
         glTexCoord2f(0.0f, 1.0f);
-        glVertex2i(x1, y2);
+        glVertex2i(w->winX, w->winY + w->h);
         glTexCoord2f(1.0f, 1.0f);
-        glVertex2i(x2, y2);
+        glVertex2i(w->winX + w->w, w->winY + w->h);
         glEnd();
 #else
         assert(0);
 #endif
+    glColor4ub(255, 255, 255, 255);
     }
 }
 
@@ -6291,6 +6294,7 @@ void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp, int x
 void tigrGAPIPresent(Tigr* bmp, int w, int h) {
     TigrInternal* win = tigrInternal(bmp);
     GLStuff* gl = &win->gl;
+    winTable *p = bmp->main;
 
     glViewport(0, 0, w, h);
     if (!gl->gl_user_opengl_rendering) {
@@ -6324,8 +6328,21 @@ void tigrGAPIPresent(Tigr* bmp, int w, int h) {
     } else {
         glDisable(GL_BLEND);
     }
+    // draw the main window bitmap
     tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[0], bmp, win->pos[0], win->pos[1], win->pos[2], win->pos[3]);
 
+    // draw the windows
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    for (int i = 0; i < p->count; i++) {
+        Tigr *pwin = p->table[i];
+        if (pwin > 0) {
+            tigrGAPIUpdateTexture(pwin);
+            tigrGAPIDrawWindow(gl->gl_legacy, gl->uniform_model, pwin);
+        }
+    }
+
+    // draw widgets if needed
     if (win->widgetsScale > 0) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
