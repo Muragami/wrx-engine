@@ -57,12 +57,12 @@ typedef struct Tigr {
     int cx, cy, cw, ch; // clip rect
     TPixel *pix;        // pixel data
     union {
-        void *handle;       // OS window handle, NULL for off-screen bitmaps.
-        int texId;          // a texture id for this bitmap window or -1
+        void *handle;       
+        unsigned int texId; // a texture id for this bitmap window or -1
     };
     int winX, winY;     // window position
     TPixel winColor;    // window draw color
-    int unused;         // a buffer for 16 byte alignment
+    int position;       // a buffer for 16 byte alignment
     void *user;         // user pointer
     void *main;         // main window pointer, if this isn't the main window
 } Tigr;

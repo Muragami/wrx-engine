@@ -16,6 +16,12 @@
 #define TIGR_GAPI_GL
 #endif
 
+typedef struct _winTable {
+    Tigr **table;
+    int end;
+    int count;
+} winTable;
+
 // Creates a new bitmap, with extra payload bytes.
 Tigr* tigrBitmap2(int w, int h, int extra);
 
@@ -146,6 +152,53 @@ typedef struct {
 } TigrInternal;
 // ----------------------------------------------------------
 
+// ----------------------------------------------------------
+// WRX added code for windows, extra
+
+void tigrResizeWindowTable(Tigr* bmp, int cnt) {
+    winTable *p = NULL;
+    int old = 0;
+
+    if (bmp->main == NULL) {
+        p = calloc(1, sizeof(winTable));
+        if (bmp->main == NULL) {
+            exit(-1);
+        }
+        p->table = calloc(1, sizeof(Tigr*) * cnt);
+        if (p->table == NULL) {
+            exit(-1);
+        }
+        p->end = cnt;
+        p->count = 0;
+        bmp->main = p;
+    } else {
+        p = bmp->main;
+        if (cnt > p->end) {
+            old = p->end;
+            p->table = realloc(p->table, sizeof(Tigr*) * cnt);
+            if (p->table == NULL) {
+                exit(-1);
+            }
+            for (int i = old; i < cnt; i++) {
+                p->table[i] = NULL;
+            }
+            p->end = cnt;
+        }
+    }
+}
+
+Tigr *tigrWindow(int w, int h) {
+    Tigr *p;
+
+    p = tigrBitmap(w, h);
+
+
+
+    return p;
+}
+
+// ----------------------------------------------------------
+
 TigrInternal* tigrInternal(Tigr* bmp);
 
 void tigrGAPICreate(Tigr* bmp);
@@ -153,6 +206,11 @@ void tigrGAPIDestroy(Tigr* bmp);
 int tigrGAPIBegin(Tigr* bmp);
 int tigrGAPIEnd(Tigr* bmp);
 void tigrGAPIPresent(Tigr* bmp, int w, int h);
+// wrx additions
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp, int x1, int y1, int x2, int y2);
+void tigrGAPINewTexture(Tigr* bmp);
+void tigrGAPIUpdateTexture(Tigr* bmp);
+void tigrGAPIDeleteTexture(Tigr* bmp);
 
 #endif
 
@@ -286,6 +344,12 @@ Tigr* tigrBitmap2(int w, int h, int extra) {
     tigr->ch = -1;
     tigr->pix = (TPixel*)calloc(w * h, sizeof(TPixel));
     tigr->blitMode = TIGR_BLEND_ALPHA;
+    tigr->flags = TIGR_BITMAP | TIGR_UPDATED;
+    tigr->winColor.r = 255;
+    tigr->winColor.g = 255;
+    tigr->winColor.b = 255;
+    tigr->winColor.a = 255;
+    tigr->position = -1;
     return tigr;
 }
 
@@ -2374,6 +2438,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     if (wglSwapIntervalEXT_)
         wglSwapIntervalEXT_(1);
 
+    tigrResizeWindowTable(bmp, 1024);
     return bmp;
 }
 
@@ -3132,6 +3197,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     objc_msgSend_void(openGLContext, sel("makeCurrentContext"));
     tigrGAPICreate(bmp);
 
+    tigrResizeWindowTable(bmp, 1024);
     return bmp;
 }
 
@@ -4147,6 +4213,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
     tigrGAPICreate(bmp);
 
+    tigrResizeWindowTable(bmp, 1024);
     return bmp;
 }
 
@@ -4606,6 +4673,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     tigrGAPICreate(bmp);
     tigrGAPIBegin(bmp);
 
+    tigrResizeWindowTable(bmp, 1024);
     return bmp;
 }
 
@@ -5563,6 +5631,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
 
     tigrGAPICreate(bmp);
 
+    tigrResizeWindowTable(bmp, 1024);
     return bmp;
 }
 
@@ -6060,6 +6129,33 @@ void tigrCreateShaderProgram(GLStuff* gl, const char* fxSource, int fxSize) {
     gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
 }
 
+void tigrGAPINewTexture(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    GLStuff* gl = &win->gl;
+
+    glGenTextures(1, &bmp->texId);
+    glBindTexture(GL_TEXTURE_2D, bmp->texId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->gl_legacy ? GL_NEAREST : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->gl_legacy ? GL_NEAREST : GL_LINEAR);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+}
+
+void tigrGAPIUpdateTexture(Tigr* bmp) {
+    if (bmp->flags & (TIGR_UPDATED | TIGR_WINDOW)) {
+        // an updated window, so update the backing texture
+        glBindTexture(GL_TEXTURE_2D, bmp->texId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp->pix);
+        bmp->flags -= TIGR_UPDATED;
+    }
+}
+
+void tigrGAPIDeleteTexture(Tigr* bmp) {
+    if (glIsTexture(bmp->texId)) {
+        glDeleteTextures(1, &bmp->texId);
+    }
+}
+
 void tigrGAPICreate(Tigr* bmp) {
     TigrInternal* win = tigrInternal(bmp);
     GLStuff* gl = &win->gl;
@@ -6126,6 +6222,37 @@ void tigrGAPIDestroy(Tigr* bmp) {
     if (tigrGAPIEnd(bmp) < 0) {
         tigrError(bmp, "Cannot deactivate OpenGL context.\n");
         return;
+    }
+}
+
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp, int x1, int y1, int x2, int y2) {
+    glBindTexture(GL_TEXTURE_2D, tex);
+    
+    if (!legacy) {
+        float sx = (float)(x2 - x1);
+        float sy = (float)(y2 - y1);
+        float tx = (float)x1;
+        float ty = (float)y1;
+
+        float model[16] = { sx, 0.0f, 0.0f, 0.0f, 0.0f, sy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, tx, ty, 0.0f, 1.0f };
+
+        glUniformMatrix4fv(uniform_model, 1, GL_FALSE, model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    } else {
+#if !(__APPLE__ || __ANDROID__)
+        glBegin(GL_QUADS);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex2i(x2, y1);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2i(x1, y1);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex2i(x1, y2);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex2i(x2, y2);
+        glEnd();
+#else
+        assert(0);
+#endif
     }
 }
 
