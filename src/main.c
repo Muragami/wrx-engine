@@ -10,6 +10,7 @@
 
 int main(int argc, char *argv[])
 {
+    /*
     wrxState *ps = wrxNewState();
     char *arg;
 
@@ -32,14 +33,16 @@ int main(int argc, char *argv[])
         }
     }
 
-    return 0;
+    return 0; */
 
-    /*
-    Tigr *screen = tigrWindow(640, 360, "Hello", 0);
+    printf("init!\n");
+    Tigr *screen = tigrMainWindow(640, 360, "Hello", 0);
     float clock, nt, fps = 30.0;
 
+    printf("ok!\n");
     clock = tigrTime();
     nt = clock + (1 / fps);
+    printf("started!\n");
     while (!tigrClosed(screen))
     {
         tigrClear(screen, tigrRGB(0x80, 0x90, 0xa0));
@@ -51,8 +54,9 @@ int main(int argc, char *argv[])
         }
         nt = clock + (1 / fps);
     }
+    printf("ended!\n");
     tigrFree(screen);
     return 0;
-    */
+    
 }
 

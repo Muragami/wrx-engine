@@ -93,6 +93,7 @@ typedef struct {
     GLuint uniform_projection;
     GLuint uniform_model;
     GLuint uniform_parameters;
+    GLuint uniform_color;
     int gl_legacy;
     int gl_user_opengl_rendering;
 } GLStuff;
@@ -155,10 +156,13 @@ typedef struct {
 // ----------------------------------------------------------
 // WRX added code for windows, extra
 // wrx additions
+#include <stdlib.h>
+#include <stdio.h>
+
 static Tigr *mainWindow = NULL;
 static unsigned int winBlockSize = 1024;
 
-void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, Tigr *w);
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint color_id, Tigr *w);
 void tigrGAPINewTexture(Tigr* bmp);
 void tigrGAPIUpdateTexture(Tigr* bmp);
 void tigrGAPIDeleteTexture(Tigr* bmp);
@@ -168,8 +172,8 @@ void tigrResizeWindowTable(Tigr* bmp, int cnt) {
     int old = 0;
 
     if (bmp->main == NULL) {
-        p = calloc(1, sizeof(winTable));
-        if (bmp->main == NULL) {
+        p = calloc(sizeof(winTable), 1);
+        if (p == NULL) {
             exit(-1);
         }
         p->table = calloc(1, sizeof(Tigr*) * cnt);
@@ -287,10 +291,11 @@ const char tigr_upscale_gl_fs[] = {
     "out vec4 color;"
     "uniform sampler2D image;"
     "uniform vec4 parameters;"
-    "void fxShader(out vec4 color, in vec2 coord);"
+    "uniform vec4 dcolor;"
+    "void fxShader(out vec4 color, in vec4 dc, in vec2 coord);"
     "void main()"
     "{"
-    "   fxShader(color, uv);"
+    "   fxShader(color, dcolor, uv);"
     "}\n"
 };
 // clang-format on
@@ -299,13 +304,13 @@ const int tigr_upscale_gl_fs_size = (int)sizeof(tigr_upscale_gl_fs) - 1;
 
 // clang-format off
 const char tigr_default_fx_gl_fs[] = {
-    "void fxShader(out vec4 color, in vec2 uv) {"
+    "void fxShader(out vec4 color, in vec4 dc, in vec2 uv) {"
     "   vec2 tex_size = vec2(textureSize(image, 0));"
     "   vec2 uv_blur = mix(floor(uv * tex_size) + 0.5, uv * tex_size, parameters.xy) / tex_size;"
     "   vec4 c = texture(image, uv_blur);"
     "   c.rgb *= mix(0.5, 1.0 - fract(uv.y * tex_size.y), parameters.z) * 2.0; //scanline\n"
     "   c = mix(vec4(0.5), c, parameters.w); //contrast\n"
-    "   color = c;"
+    "   color = c * dc;"
     "}"
 };
 // clang-format on
@@ -6147,6 +6152,7 @@ void tigrCreateShaderProgram(GLStuff* gl, const char* fxSource, int fxSize) {
     gl->uniform_projection = glGetUniformLocation(gl->program, "projection");
     gl->uniform_model = glGetUniformLocation(gl->program, "model");
     gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
+    gl->uniform_color = glGetUniformLocation(gl->program, "dcolor");
 }
 
 void tigrGAPINewTexture(Tigr* bmp) {
@@ -6245,23 +6251,27 @@ void tigrGAPIDestroy(Tigr* bmp) {
     }
 }
 
-void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, Tigr* w) {
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint color_id, Tigr* w) {
     glBindTexture(GL_TEXTURE_2D, w->texId);
     
-    glColor4ub(w->winColor.r, w->winColor.g, w->winColor.b, w->winColor.a);
     if (!legacy) {
         float sx = (float)w->w;
         float sy = (float)w->h;
         float tx = (float)w->winX;
         float ty = (float)w->winY;
+        float byte_to_float = 1.0f / 255.0f;
 
         float model[16] = { sx, 0.0f, 0.0f, 0.0f, 0.0f, sy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, tx, ty, 0.0f, 1.0f };
 
         glUniformMatrix4fv(uniform_model, 1, GL_FALSE, model);
+        glUniform4f(color_id, (float)w->winColor.r * byte_to_float, (float)w->winColor.g * byte_to_float,
+                                (float)w->winColor.b * byte_to_float, (float)w->winColor.a * byte_to_float);
         glDrawArrays(GL_TRIANGLES, 0, 6);
+        glUniform4f(color_id, 1.0f, 1.0f, 1.0f, 1.0f);
     } else {
 #if !(__APPLE__ || __ANDROID__)
         glBegin(GL_QUADS);
+        glColor4ub(w->winColor.r, w->winColor.g, w->winColor.b, w->winColor.a);
         glTexCoord2f(1.0f, 0.0f);
         glVertex2i(w->winX + w->w, w->winY);
         glTexCoord2f(0.0f, 0.0f);
@@ -6270,11 +6280,11 @@ void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, Tigr* w) {
         glVertex2i(w->winX, w->winY + w->h);
         glTexCoord2f(1.0f, 1.0f);
         glVertex2i(w->winX + w->w, w->winY + w->h);
+        glColor4ub(255, 255, 255, 255);
         glEnd();
 #else
         assert(0);
 #endif
-    glColor4ub(255, 255, 255, 255);
     }
 }
 
@@ -6335,6 +6345,7 @@ void tigrGAPIPresent(Tigr* bmp, int w, int h) {
         glUseProgram(gl->program);
         glUniformMatrix4fv(gl->uniform_projection, 1, GL_FALSE, projection);
         glUniform4f(gl->uniform_parameters, win->p1, win->p2, win->p3, win->p4);
+        glUniform4f(gl->uniform_color, 1.0f, 1.0f, 1.0f, 1.0f);
     } else {
 #if !(__APPLE__ || __ANDROID__)
         glMatrixMode(GL_PROJECTION);
@@ -6362,7 +6373,7 @@ void tigrGAPIPresent(Tigr* bmp, int w, int h) {
         Tigr *pwin = p->table[i];
         if (pwin > 0) {
             tigrGAPIUpdateTexture(pwin);
-            tigrGAPIDrawWindow(gl->gl_legacy, gl->uniform_model, pwin);
+            tigrGAPIDrawWindow(gl->gl_legacy, gl->uniform_model, gl->uniform_color, pwin);
         }
     }
 

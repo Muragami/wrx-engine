@@ -7,6 +7,7 @@
 */
 
 #include "wrx.h"
+#include <string.h>
 
 // *********************************************************
 // forward defines for lua functions
