@@ -155,6 +155,9 @@ typedef struct {
 // ----------------------------------------------------------
 // WRX added code for windows, extra
 // wrx additions
+static Tigr *mainWindow = NULL;
+static unsigned int winBlockSize = 1024;
+
 void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, Tigr *w);
 void tigrGAPINewTexture(Tigr* bmp);
 void tigrGAPIUpdateTexture(Tigr* bmp);
@@ -198,6 +201,14 @@ Tigr *tigrWindow(int w, int h) {
     p = tigrBitmap(w, h);
     tigrGAPINewTexture(p);
     p->flags = TIGR_WINDOW | TIGR_UPDATED;
+
+    // window created, add it to the window table
+    winTable *t = mainWindow->main;
+    t->table[t->count++] = p;
+    if (t->count == t->end) {
+        // expand the window table!
+        tigrResizeWindowTable(mainWindow, t->end += winBlockSize);
+    }
 
     return p;
 }
@@ -2440,7 +2451,8 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     if (wglSwapIntervalEXT_)
         wglSwapIntervalEXT_(1);
 
-    tigrResizeWindowTable(bmp, 1024);
+    mainWindow = bmp;
+    tigrResizeWindowTable(bmp, winBlockSize);
     return bmp;
 }
 
@@ -3199,7 +3211,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     objc_msgSend_void(openGLContext, sel("makeCurrentContext"));
     tigrGAPICreate(bmp);
 
-    tigrResizeWindowTable(bmp, 1024);
+    tigrResizeWindowTable(bmp, winBlockSize);
     return bmp;
 }
 
@@ -4216,7 +4228,8 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
     tigrGAPICreate(bmp);
 
-    tigrResizeWindowTable(bmp, 1024);
+    mainWindow = bmp;
+    tigrResizeWindowTable(bmp, winBlockSize);
     return bmp;
 }
 
@@ -4677,7 +4690,8 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     tigrGAPICreate(bmp);
     tigrGAPIBegin(bmp);
 
-    tigrResizeWindowTable(bmp, 1024);
+    mainWindow = bmp;
+    tigrResizeWindowTable(bmp, winBlockSize);
     return bmp;
 }
 
@@ -5636,7 +5650,8 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
 
     tigrGAPICreate(bmp);
 
-    tigrResizeWindowTable(bmp, 1024);
+    mainWindow = bmp;
+    tigrResizeWindowTable(bmp, winBlockSize);
     return bmp;
 }
 
