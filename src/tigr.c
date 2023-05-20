@@ -162,7 +162,7 @@ typedef struct {
 static Tigr *mainWindow = NULL;
 static unsigned int winBlockSize = 1024;
 
-void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint color_id, Tigr *w);
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint color_id, Tigr *w, int scale);
 void tigrGAPINewTexture(Tigr* bmp);
 void tigrGAPIUpdateTexture(Tigr* bmp);
 void tigrGAPIDeleteTexture(Tigr* bmp);
@@ -215,6 +215,10 @@ Tigr *tigrWindow(int w, int h) {
     }
 
     return p;
+}
+
+void tigrChange(Tigr *bmp) {
+    bmp->flags |= TIGR_UPDATED;
 }
 
 // ----------------------------------------------------------
@@ -6156,7 +6160,7 @@ void tigrCreateShaderProgram(GLStuff* gl, const char* fxSource, int fxSize) {
 }
 
 void tigrGAPINewTexture(Tigr* bmp) {
-    TigrInternal* win = tigrInternal(bmp);
+    TigrInternal* win = tigrInternal(mainWindow);
     GLStuff* gl = &win->gl;
 
     glGenTextures(1, &bmp->texId);
@@ -6251,14 +6255,14 @@ void tigrGAPIDestroy(Tigr* bmp) {
     }
 }
 
-void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint color_id, Tigr* w) {
+void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint color_id, Tigr* w, int scale) {
     glBindTexture(GL_TEXTURE_2D, w->texId);
     
     if (!legacy) {
-        float sx = (float)w->w;
-        float sy = (float)w->h;
-        float tx = (float)w->winX;
-        float ty = (float)w->winY;
+        float sx = (float)w->w * (float)scale;
+        float sy = (float)w->h * (float)scale;
+        float tx = (float)w->winX * (float)scale;
+        float ty = (float)w->winY * (float)scale;
         float byte_to_float = 1.0f / 255.0f;
 
         float model[16] = { sx, 0.0f, 0.0f, 0.0f, 0.0f, sy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, tx, ty, 0.0f, 1.0f };
@@ -6273,13 +6277,13 @@ void tigrGAPIDrawWindow(int legacy, GLuint uniform_model, GLuint color_id, Tigr*
         glBegin(GL_QUADS);
         glColor4ub(w->winColor.r, w->winColor.g, w->winColor.b, w->winColor.a);
         glTexCoord2f(1.0f, 0.0f);
-        glVertex2i(w->winX + w->w, w->winY);
+        glVertex2i((w->winX + w->w) * (float)scale, w->winY * (float)scale);
         glTexCoord2f(0.0f, 0.0f);
-        glVertex2i(w->winX, w->winY);
+        glVertex2i(w->winX * (float)scale, w->winY * (float)scale);
         glTexCoord2f(0.0f, 1.0f);
-        glVertex2i(w->winX, w->winY + w->h);
+        glVertex2i(w->winX * (float)scale, (w->winY + w->h)  * (float)scale);
         glTexCoord2f(1.0f, 1.0f);
-        glVertex2i(w->winX + w->w, w->winY + w->h);
+        glVertex2i((w->winX + w->w) * (float)scale, (w->winY + w->h) * (float)scale);
         glColor4ub(255, 255, 255, 255);
         glEnd();
 #else
@@ -6373,7 +6377,7 @@ void tigrGAPIPresent(Tigr* bmp, int w, int h) {
         Tigr *pwin = p->table[i];
         if (pwin > 0) {
             tigrGAPIUpdateTexture(pwin);
-            tigrGAPIDrawWindow(gl->gl_legacy, gl->uniform_model, gl->uniform_color, pwin);
+            tigrGAPIDrawWindow(gl->gl_legacy, gl->uniform_model, gl->uniform_color, pwin, win->scale);
         }
     }
 

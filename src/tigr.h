@@ -122,6 +122,9 @@ void tigrSetPostFX(Tigr *bmp, float p1, float p2, float p3, float p4);
 
 // Drawing ----------------------------------------------------------------
 
+// make sure a bitmap gets updated
+void tigrChange(Tigr *bmp);
+
 // Helper for reading pixels.
 // For high performance, just access bmp->pix directly.
 TPixel tigrGet(Tigr *bmp, int x, int y);
