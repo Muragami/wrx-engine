@@ -1,7 +1,11 @@
 {
+"type": "font",
+"variant": "basic",
+"format": "CP437",
 "name": "Mx437_HP_100LX_6x8",
 "width": 6,
 "height": 8,
+"bits-encoding": "Z85",
 "bits":
 	[
 		"00-#lkl7V-lb%IK0000M0op}F00Aok0000wNrPjXaMd<j55pyfr8yBUS@BA?2SI?$03D<@004x?={B.JklbVYlm05WRJ%.}",

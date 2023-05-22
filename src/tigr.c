@@ -204,7 +204,7 @@ Tigr *tigrWindow(int w, int h) {
 
     p = tigrBitmap(w, h);
     tigrGAPINewTexture(p);
-    p->flags = TIGR_WINDOW | TIGR_UPDATED;
+    p->flags = TIGR_BMP_WINDOW | TIGR_BMP_UPDATED;
 
     // window created, add it to the window table
     winTable *t = mainWindow->main;
@@ -218,7 +218,7 @@ Tigr *tigrWindow(int w, int h) {
 }
 
 void tigrChange(Tigr *bmp) {
-    bmp->flags |= TIGR_UPDATED;
+    bmp->flags |= TIGR_BMP_UPDATED;
 }
 
 // ----------------------------------------------------------
@@ -365,7 +365,7 @@ Tigr* tigrBitmap2(int w, int h, int extra) {
     tigr->ch = -1;
     tigr->pix = (TPixel*)calloc(w * h, sizeof(TPixel));
     tigr->blitMode = TIGR_BLEND_ALPHA;
-    tigr->flags = TIGR_BITMAP | TIGR_UPDATED;
+    tigr->flags = TIGR_BMP_NORMAL | TIGR_BMP_UPDATED;
     tigr->winColor.r = 255;
     tigr->winColor.g = 255;
     tigr->winColor.b = 255;
@@ -2418,7 +2418,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     // Wrap a bitmap around it.
     bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
     bmp->handle = hWnd;
-    bmp->flags = TIGR_MAINWINDOW | TIGR_UPDATED;
+    bmp->flags = TIGR_BMP_MAIN | TIGR_BMP_UPDATED;
 
     // Set up the Windows parts.
     win = tigrInternal(bmp);
@@ -4218,7 +4218,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
     scale = tigrEnforceScale(scale, flags);
     Tigr* bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
     bmp->handle = (void*)4711;
-    bmp->flags = TIGR_MAINWINDOW | TIGR_UPDATED;
+    bmp->flags = TIGR_BMP_MAIN | TIGR_BMP_UPDATED;
     TigrInternal* win = tigrInternal(bmp);
     win->shown = 0;
     win->closed = 0;
@@ -4666,7 +4666,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
 
     bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
     bmp->handle = (void*)xwin;
-    bmp->flags = TIGR_MAINWINDOW | TIGR_UPDATED;
+    bmp->flags = TIGR_BMP_MAIN | TIGR_BMP_UPDATED;
 
     TigrInternal* win = tigrInternal(bmp);
     win->win = xwin;
@@ -5627,7 +5627,7 @@ Tigr* tigrMainWindow(int w, int h, const char* title, int flags) {
 
     Tigr* bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
     bmp->handle = (void*)gState.window;
-    bmp->flags = TIGR_MAINWINDOW | TIGR_UPDATED;
+    bmp->flags = TIGR_BMP_MAIN | TIGR_BMP_UPDATED;
 
     TigrInternal* win = tigrInternal(bmp);
     win->context = context;
@@ -6172,11 +6172,11 @@ void tigrGAPINewTexture(Tigr* bmp) {
 }
 
 void tigrGAPIUpdateTexture(Tigr* bmp) {
-    if (bmp->flags & (TIGR_UPDATED | TIGR_WINDOW)) {
+    if (bmp->flags & (TIGR_BMP_UPDATED | TIGR_BMP_WINDOW)) {
         // an updated window, so update the backing texture
         glBindTexture(GL_TEXTURE_2D, bmp->texId);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp->pix);
-        bmp->flags -= TIGR_UPDATED;
+        bmp->flags -= TIGR_BMP_UPDATED;
     }
 }
 
@@ -6296,9 +6296,9 @@ void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp, int x
     glBindTexture(GL_TEXTURE_2D, tex);
 
     // only update the texture if it was updated!
-    if (bmp->flags & TIGR_UPDATED) {
+    if (bmp->flags & TIGR_BMP_UPDATED) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp->pix);
-        bmp->flags -= TIGR_UPDATED;
+        bmp->flags -= TIGR_BMP_UPDATED;
     }
 
     if (!legacy) {

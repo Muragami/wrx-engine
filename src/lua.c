@@ -46,7 +46,7 @@ const char *lwrxDataReader(lua_State *L, void *data, size_t *size)
 		p->flags -= WRX_READ_FLAG;
 		return NULL;
 	} else {
-		*size = p->end;
+		*size = p->count;
 		p->flags |= WRX_READ_FLAG;
 		return p->memory;	
 	}

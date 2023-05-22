@@ -36,6 +36,7 @@ wrxState *wrxNewState() {
 
 	ret->fpsTarget = 30.0f;
 	ret->sleepUMS = 5000;
+	ret->idBits = WRX_ID_BITS_16;
 	ret->L = luaL_newstate();
 	
 	if (ret->L == NULL) {
@@ -61,14 +62,15 @@ wrxState *wrxNewState() {
 	lwrxRegister(ret->L);
 
 	// internal stuff
-	ret->global = dwrxNewTable();
-
+	ret->gTable = dwrxNewTable(ret);
+	for (int i = 0; i < 256; ret->gTree[i++] = NULL);
+		
 	return ret;
 }
 
 int wrxStart(wrxState *p, const char *app) {
 	wrxData *srcFile;
-	int ret, top;
+	int ret, top, v;
 
 	if (PHYSFS_mount(app, "/", 0) == 0) {
 		// bad mount, so report the error
@@ -102,6 +104,10 @@ int wrxStart(wrxState *p, const char *app) {
 		lwrxFieldToString(p, -1, "name", p->name, WRX_LINE);
 		lwrxFieldToInteger(p, -1, "width", &p->width);
 		lwrxFieldToInteger(p, -1, "height", &p->height);
+		lwrxFieldToInteger(p, -1, "idBits", &v);
+		if (v != 0) {
+			
+		}
 		lwrxFieldToFloat(p, -1, "fps", &p->fpsTarget);
 
 		lua_settop(p->L, top);

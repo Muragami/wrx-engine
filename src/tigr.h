@@ -44,10 +44,10 @@ typedef struct {
 #define TIGR_NOCURSOR   32  // hide cursor
 #define TIGR_FULLSCREEN 64  // start in full-screen mode
 
-#define TIGR_BITMAP     1   // a TIGR bitmap
-#define TIGR_WINDOW     2   // a TIGR window (a bitmap with a backing gl texture to composite it to the screen)
-#define TIGR_MAINWINDOW 4   // the TIGR main window
-#define TIGR_UPDATED    8   // the TIGR main window
+#define TIGR_BMP_NORMAL     1   // a TIGR bitmap
+#define TIGR_BMP_WINDOW     2   // a TIGR window (a bitmap with a backing gl texture to composite it to the screen)
+#define TIGR_BMP_MAIN       4   // the TIGR main window
+#define TIGR_BMP_UPDATED    8   // the TIGR main window
 
 // A Tigr bitmap.
 typedef struct Tigr {

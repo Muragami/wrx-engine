@@ -8,4 +8,5 @@ function wrx.conf(cfg)
 	cfg.height = 360
 	cfg.fps = 30
 	cfg.name = "WRX-DEMO"
+	cfg.idBits = 16
 end

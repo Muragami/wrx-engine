@@ -10,7 +10,6 @@
 
 int main(int argc, char *argv[])
 {
-    /*
     wrxState *ps = wrxNewState();
     char *arg;
 
@@ -33,8 +32,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    return 0; */
+    return 0;
 
+/*
     printf("init!\n");
     Tigr *screen = tigrMainWindow(640, 360, "Hello", 0);
     float clock, nt, fps = 30.0;
@@ -66,6 +66,6 @@ int main(int argc, char *argv[])
     printf("ended!\n");
     tigrFree(screen);
     return 0;
-    
+ */   
 }
 
