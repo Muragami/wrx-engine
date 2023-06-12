@@ -15,8 +15,7 @@ int main(int argc, char *argv[])
 
     if (argc > 1) arg = argv[1];
      else {
-        printf("wrx:: no argument passed to the engine, nothing to do.");
-        return -1;
+        arg = NULL;
      }
 
     printf("wrx:: state created\n");
@@ -25,7 +24,6 @@ int main(int argc, char *argv[])
     }
 
     printf("wrx:: state started\n");
-
     while (wrxRunning(ps)) {
         if (WRX_ERROR(wrxUpdate(ps))) {
             break;
@@ -33,6 +31,7 @@ int main(int argc, char *argv[])
     }
 
     return 0;
+}
 
 /*
     printf("init!\n");
@@ -67,5 +66,3 @@ int main(int argc, char *argv[])
     tigrFree(screen);
     return 0;
  */   
-}
-

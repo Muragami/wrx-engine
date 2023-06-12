@@ -1,5 +1,7 @@
 CC = clang
+CCP = clang++
 CFLAGS = -std=c99 -m64 -Wall -I./include
+CPFLAGS = -m64 -Wall -I./include
 OPTFLAGS ?= -o3
 IFLAGS = -I/usr/local/Cellar/lua/5.4.6/include/lua5.4/
 OBJS = ./obj/
@@ -21,8 +23,8 @@ $(OBJS)main.w.o: $(SRCS)main.c
 $(OBJS)tigr.w.o: $(SRCS)tigr.c
 	$(CC) $(CFLAGS) $(OPTFLAGS) -c $(SRCS)tigr.c -o $(OBJS)tigr.w.o
 
-$(OBJS)data.w.o: $(SRCS)data.c
-	$(CC) $(CFLAGS) $(OPTFLAGS) -c $(SRCS)data.c -o $(OBJS)data.w.o	
+$(OBJS)data.w.o: $(SRCS)data.cpp
+	$(CCP) $(CPFLAGS) $(OPTFLAGS) -c $(SRCS)data.cpp -o $(OBJS)data.w.o
 
 $(OBJS)core.w.o: $(SRCS)core.c
 	$(CC) $(CFLAGS) $(OPTFLAGS) -c $(SRCS)core.c -o $(OBJS)core.w.o	
@@ -51,8 +53,8 @@ $(OBJS)main.m.o: $(SRCS)main.c
 $(OBJS)tigr.m.o: $(SRCS)tigr.c
 	$(CC) $(CFLAGS) $(OPTFLAGS) $(IFLAGS) -c $(SRCS)tigr.c -o $(OBJS)tigr.m.o
 
-$(OBJS)data.m.o: $(SRCS)data.c
-	$(CC) $(CFLAGS) $(OPTFLAGS) $(IFLAGS) -c $(SRCS)data.c -o $(OBJS)data.m.o	
+$(OBJS)data.m.o: $(SRCS)data.cpp
+	$(CCP) $(CPFLAGS) $(OPTFLAGS) $(IFLAGS) -c $(SRCS)data.cpp -o $(OBJS)data.m.o	
 
 $(OBJS)core.m.o: $(SRCS)core.c
 	$(CC) $(CFLAGS) $(OPTFLAGS) $(IFLAGS) -c $(SRCS)core.c -o $(OBJS)core.m.o	

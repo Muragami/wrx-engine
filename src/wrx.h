@@ -18,6 +18,10 @@
 #include "tigr.h"
 #include "xthread.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ********************************************************
 // some common values
 #define WRX_LINE		256
@@ -34,10 +38,33 @@
 #define WRX_NAME		"WRX_ENGINE"
 #define WRX_CODENAME	"Hydrogen"
 
+#define WRX_PORT		32023
+
 #define WRX_ID_BITS_16	16
+#define WRX_ID_BITS_20	20
 #define WRX_ID_BITS_24	24
 
+#define WRX_STD_THREADS	8
+#define WRX_MAX_THREADS	16
+
 #define WRX_READ_FLAG	0xF0000000
+
+// setting bits
+#define WRX_SETTING_NOAUDIO		(1 << 0)
+#define WRX_SETTING_NOTREE		(1 << 1)
+#define WRX_SETTING_NONETWORK	(1 << 2)
+#define WRX_SETTING_NOSCREEN	(1 << 3)
+
+#define WRX_THREAD_IDLE			(1 << 1)
+
+#define WRX_FORM_NULL		0x00
+#define WRX_FORM_DATA		0x01
+#define WRX_FORM_MEMIO		0x02
+#define WRX_FORM_STRING		0x03
+#define WRX_FORM_DOUBLE		0x04
+#define WRX_FORM_INTEGER	0x05
+#define WRX_FORM_POINTER	0x06
+#define WRX_FORM_TABLE		0x07
 
 // types of data the system might store in a table
 #define WRX_DATA_BINARY		0x0		// unknown binary data
@@ -46,8 +73,8 @@
 #define WRX_DATA_TABLE		0x3		// a wrx table (containing data)
 #define WRX_DATA_STATE		0x4		// a wrx table (containing data)
 // some flags for data objects
-#define WRX_DATA_NODE		0x10		// this data is a node, and has data following it
-#define WRX_DATA_ARRAY		0x20		// this data is a node, and has data following it
+#define WRX_DATA_NODE		0x10	// this data is a node, and has data following it
+#define WRX_DATA_ARRAY		0x20	// this data is a node, and has data following it
 // invalid id and linkage
 #define WRX_DATA_INVALID 	0xFFFFFFFF	// this data is invalid
 
@@ -65,11 +92,57 @@ typedef struct {
 } wrxData;
 
 typedef struct {
-	wrxData* data;
+    char *mem;
+    unsigned int length;
+    unsigned int pos;
+    unsigned int imode;
+    unsigned int local;
+    unsigned int unused[2];
+} wrxMemIO;
+
+typedef struct {
+	char name[128];
+	int form;
+	union {
+		wrxMemIO io;
+		wrxData data;
+		char str[124];
+		double d[16];
+		int i[32];
+		void *p;
+	};
+} wrxInfo;
+
+typedef struct {
+	wrxInfo name;
+	wrxInfo *entry;
+	int length;
+	void *nindex;
+} wrxInfoTable;
+
+typedef struct {
+	pthread_mutex_t lock;
+	wrxInfo shareName;
+	wrxInfoTable info;
+	wrxInfoTable push;		// changed values to relay
+} wrxShare;
+
+typedef struct {
+	pthread_t handle;
+	pthread_mutex_t stateLock;
+	pthread_mutex_t msgLock;
+	unsigned int mode;
+	int id;
+	int sleepUMS;
+	void *state;
+} wrxThread;
+
+typedef struct {
+	wrxInfo* data;
 } wrxIdTreeNode;
 
 typedef struct {
-	void* child[256];
+	void* child[16];
 } wrxIdTreeLevel;
 
 typedef struct {
@@ -83,6 +156,7 @@ typedef struct {
 	float fpsTarget;
 	float drawClock;
 	int mode;
+	int settings;
 	int width;
 	int height;
 	int sleepUMS;
@@ -90,12 +164,17 @@ typedef struct {
 	char name[WRX_LINE];
 	char error[WRX_LINE];
 	Tigr* screen;
+	TPixel* scrClearColor;
 	lua_State* L;
 	unsigned int idBits;
 	unsigned int nextId;
 	void* gTable;
 	wrxIdTree* gTree[256];
 	void *audio;
+	int threads;
+	pthread_mutex_t stateLock;
+	pthread_mutex_t tableLock;
+	wrxThread *thread[WRX_MAX_THREADS];
 } wrxState;
 
 
@@ -119,9 +198,12 @@ void lwrxFieldToString(wrxState *p, int index, const char *name, char *buffer, i
 void *dwrxNewTable(wrxState *p);
 void *dwrxNewTree(wrxState *p, int id_bits);
 void dwrxFreeTree(wrxIdTree *tree);
-wrxData *dwrxReadFile(const char* fname);
-void dwrxFreeData(wrxData *p);
+wrxInfo *dwrxReadFile(const char* fname);
+void dwrxFreeInfo(wrxInfo *p);
 
 // ********************************************************
 #endif
 
+#ifdef __cplusplus
+}
+#endif
