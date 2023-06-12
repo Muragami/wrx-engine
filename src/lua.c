@@ -9,17 +9,21 @@
 #include "wrx.h"
 #include <string.h>
 
+extern wrxState* _theState;
+
 // *********************************************************
 // forward defines for lua functions
 int lfwrxEmit(lua_State *L);
 int lfwrxShare(lua_State *L);
 int lfwrxPushIO(lua_State *L, void *mem, unsigned long bytes, unsigned int local);
+int lfwrxLoad(lua_State *L);
 
 // *********************************************************
 // back to the code
 luaL_Reg wrxFuncTable[] = {
 	{ "emit", lfwrxEmit },
 	{ "share", lfwrxShare },
+    { "load", lfwrxLoad },
 	{ NULL, NULL } };
 
 void lwrxRegister(lua_State *L) {
@@ -113,6 +117,60 @@ int lwrxNewIndexShare(lua_State *L) {
 }
 
 // *********************************************************
+// mime types
+
+typedef struct {
+    const char *ext;
+    const char *mime;
+    const char *group;
+} wrxMimeType;
+
+wrxMimeType wrxMimeTable[] = {
+    { ".aac", "audio/aac", "audio" },
+    { ".avif", "image/avif", "image" },
+    { ".avi", "video/avi", "video" },
+    { ".bin", "application/octet-stream", "application" },
+    { ".bmp", "image/bmp", "image" },
+    { ".bz", "application/x-bzip", "application" },
+    { ".bz2", "application/x-bzip2", "application" },
+    { ".css", "text/css", "text" },
+    { ".csv", "text/csv", "text" },
+    { ".gz", "application/gzip", "application" },
+    { ".gif", "image/gif", "image" },
+    { ".htm", "text/html", "text" },
+    { ".html", "text/html", "text" },
+    { ".jpeg", "image/jpeg", "image" },
+    { ".jpg", "image/jpeg", "image" },
+    { ".json", "application/json", "application" },
+    { ".mid", "audio/midi", "audio" },
+    { ".midi", "audio/midi", "audio" },
+    { ".mp3", "audio/mpeg", "audio" },
+    { ".mp4", "video/mp4", "video" },
+    { ".mpeg", "video/mpeg", "video" },
+    { ".ogg", "audio/ogg", "audio" },
+    { ".ogv", "video/ogg", "video" },
+    { ".opus", "audio/opus", "audio" },
+    { ".png", "image/png", "image" },
+    { ".pdf", "application/pdf", "application" },
+    { ".rar", "application/vnd.rar", "application" },
+    { ".rtf", "application/rtf", "application" },
+    { ".svg", "image/svg+xml", "image" },
+    { ".tar", "application/x-tar", "application" },
+    { ".tif", "image/tiff", "image" },
+    { ".tiff", "image/tiff", "image" },
+    { ".ttf", "font/ttf", "font" },
+    { ".txt", "text/plain", "text" },
+    { ".wav", "audio/wav", "audio" },
+    { ".weba", "audio/webm", "audio" },
+    { ".webm", "video/webm", "video" },
+    { ".webp", "image/webp", "image" },
+    { ".xhtml", "application/xhtml+xml", "application" },
+    { ".zip", "application/zip", "application" },
+    { ".7z", "application/x-7z-compressed", "application" },
+    { NULL, NULL, NULL }
+};
+
+// *********************************************************
 // wrx functions
 int lfwrxEmit(lua_State *L) {
 	const char *s = luaL_checkstring(L, 1);
@@ -133,21 +191,21 @@ int lfwrxShare(lua_State *L) {
 	return 1;
 }
 
+// loadtask = wrx.load(filename, mimetype (or NULL))
+int lfwrxLoad(lua_State *L) {
+
+}
+
+
+// *********************************************************
 /*
     Simple portable memory io for lua/luajit.
     muragami, muragami@wishray.com, Jason A. Petrasko 2023
     MIT License: https://opensource.org/licenses/MIT
 
-    while most of the code is obviously in C, some of the state information
-    is held in the memio lua table, specifically:
-
-        integer index 1 = lightuserdata to the memory block
-        integer index 2 = size in bytes of the memory block
-        integer index 3 = current pos byte in the memory block
-        integer index 4 = integer mode, normally 8 but can be: 8, 16, 24, 32, 48, 56, 64
-
+    Integer modes: normally 8 but can be: 8, 16, 24, 32, 48, 56, 64
     integer mode is the bits to push or consume on calls to get(), put(), which
-    read/write little endian integers into the memory butter
+    read/write little endian integers into the memory buffer
 */
 
 int lfwrxmiFree(lua_State *L);

@@ -14,6 +14,8 @@
 // the thread function
 xthread_ret wrxThreadRoutine(void *p);
 
+wrxState* _theState = NULL;
+
 int wrxError(wrxState *p, const char *fmt, ...) {
 	va_list args;
   	va_start (args, fmt);
@@ -50,6 +52,8 @@ void wrxSetupLuaState(wrxState *p, lua_State *l) {
 wrxState *wrxNewState() {
 	wrxState *ret;
 
+	if (_theState != NULL) return _theState;
+
 	ret = calloc(1, sizeof(wrxState));
 
 	if (ret == NULL) return NULL;
@@ -71,11 +75,20 @@ wrxState *wrxNewState() {
 
 	// internal stuff
 	ret->gTable = dwrxNewTable(ret);
+	ret->gTree[0] = calloc(1, sizeof(wrxIdTree));
+
+	if (ret->gTree[0] == NULL) {
+		free(ret);
+		return NULL;
+	}
+	ret->gTree[0]->idBits = WRX_ID_BITS_16;
+
 	// for (int i = 0; i < 256; ret->gTree[i++] = NULL);
 
 	pthread_mutex_init(&ret->stateLock, NULL);
 	pthread_mutex_init(&ret->tableLock, NULL);
 
+	_theState = ret;
 	return ret;
 }
 
@@ -125,8 +138,13 @@ int wrxStart(wrxState *p, const char *app) {
 			p->idBits = v;
 			switch (p->idBits) {
 				case WRX_ID_BITS_16:
+					p->gTree[0]->idBits = 16;
+					break;
+				case WRX_ID_BITS_20:
+					p->gTree[0]->idBits = 20;
 					break;
 				case WRX_ID_BITS_24:
+					p->gTree[0]->idBits = 24;
 					break;
 				default:
 					wrxError(p, "wrxStart() unsupported value for idBits! %d\n", v);
@@ -216,6 +234,19 @@ int wrxUpdate(wrxState *p) {
     // make sure we correct if we overshot the drawClock for next update
     p->drawClock = p->clock;
 	return WRX_OK;
+}
+
+wrxInfo* wrxNewIdInfo(wrxState *p, int prefix) {
+	wrxInfo *ret = calloc(1, sizeof(wrxInfo));
+	unsigned int i;
+	// find a new id number for this object
+	pthread_mutex_lock(&p->tableLock);
+	i = p->nextId++;
+	// add the object to the id tree
+	
+	pthread_mutex_unlock(&p->tableLock);
+	ret->id = i;
+	return ret;
 }
 
 // *****************************************************************************

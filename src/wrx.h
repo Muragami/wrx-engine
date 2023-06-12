@@ -65,6 +65,7 @@ extern "C" {
 #define WRX_FORM_INTEGER	0x05
 #define WRX_FORM_POINTER	0x06
 #define WRX_FORM_TABLE		0x07
+#define WRX_FORM_LUAOBJ		0x08
 
 // types of data the system might store in a table
 #define WRX_DATA_BINARY		0x0		// unknown binary data
@@ -101,11 +102,23 @@ typedef struct {
 } wrxMemIO;
 
 typedef struct {
-	char name[128];
+	unsigned short id;
+	unsigned short flags;
+	void *thread;
+	lua_State *L;
+	pthread_mutex_t lock;
+	char type[16];
+	void *p;
+} wrxLuaObject;
+
+typedef struct {
+	char name[124];
 	int form;
+	unsigned int id;
 	union {
 		wrxMemIO io;
 		wrxData data;
+		wrxLuaObject obj;
 		char str[124];
 		double d[16];
 		int i[32];
@@ -172,6 +185,7 @@ typedef struct {
 	wrxIdTree* gTree[256];
 	void *audio;
 	int threads;
+	unsigned short workTable[4096];
 	pthread_mutex_t stateLock;
 	pthread_mutex_t tableLock;
 	wrxThread *thread[WRX_MAX_THREADS];
@@ -187,6 +201,7 @@ int wrxUpdate(wrxState *p);
 int wrxRunning(wrxState *p);
 const char* wrxGetError(wrxState *p);
 int wrxError(wrxState *p, const char *fmt, ...);
+wrxInfo* wrxNewIdInfo(wrxState *p, int prefix);
 
 void lwrxRegister(lua_State *L);
 int lwrxLoadString(wrxState *p, wrxData *src, const char *name);
@@ -195,6 +210,8 @@ void lwrxFieldToFloat(wrxState *p, int index, const char *name, float *v);
 void lwrxFieldToDouble(wrxState *p, int index, const char *name, double *v);
 void lwrxFieldToString(wrxState *p, int index, const char *name, char *buffer, int bsize);
 
+void dwrxStart();
+void dwrxStop();
 void *dwrxNewTable(wrxState *p);
 void *dwrxNewTree(wrxState *p, int id_bits);
 void dwrxFreeTree(wrxIdTree *tree);

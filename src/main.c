@@ -13,6 +13,8 @@ int main(int argc, char *argv[])
     wrxState *ps = wrxNewState();
     char *arg;
 
+    dwrxStart();
+
     if (argc > 1) arg = argv[1];
      else {
         arg = NULL;
@@ -29,6 +31,8 @@ int main(int argc, char *argv[])
             break;
         }
     }
+
+    dwrxStop();
 
     return 0;
 }

@@ -7,9 +7,9 @@ IFLAGS = -I/usr/local/Cellar/lua/5.4.6/include/lua5.4/
 OBJS = ./obj/
 SRCS = ./src/
 
-WLIBS = -lws2_32 -lopengl32 -lgdi32 -llua -ljson-c -lphysfs -lportaudio -lopus -lcairo
-MLIBS = -framework OpenGL -framework Cocoa -llua -ljson-c -lphysfs -lopus -lcairo
-LLIBS = -lpthread -lGLU -lGL -lX11 -llua -ljson-c -lphysfs -lopus -lcairo
+WLIBS = -lws2_32 -lopengl32 -lgdi32 -llua -ljson-c -lphysfs -lportaudio -lopus -lcairo -lfreeimage
+MLIBS = -framework OpenGL -framework Cocoa -llua -ljson-c -lphysfs -lopus -lcairo -lfreeimage
+LLIBS = -lpthread -lGLU -lGL -lX11 -llua -ljson-c -lphysfs -lopus -lcairo -lfreeimage
 
 windows: $(OBJS)wwrx.exe
 

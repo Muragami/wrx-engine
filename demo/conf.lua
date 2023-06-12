@@ -12,6 +12,6 @@ function wrx.conf(cfg)
 	cfg.title = "WRX-ENGINE"
 	cfg.idBits = 16
 	cfg.settings = ""
-	cfg.threads = 4
+	cfg.threads = 4 -- 1-16, 4-8 is reasonable IMO
 	cfg.server = false
 end

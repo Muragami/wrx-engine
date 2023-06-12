@@ -419,8 +419,21 @@ void oa_data_free(void *data, void *arg) {
 oa_key_ops oa_key_ops_string = { oa_string_hash, oa_string_cp, oa_string_free, oa_string_eq, NULL};
 oa_val_ops oa_val_ops_data = { oa_data_cp, oa_data_free, NULL};
 
+// *****************************************************************************
+// start and stop routine
+
+void dwrxStart() {
+    FreeImage_Initialise(FALSE);
+    printf("FreeImage version: %s\n", FreeImage_GetVersion());
+    printf("FreeImage copyright: %s\n", FreeImage_GetCopyrightMessage());
+}
+
+void dwrxStop() {
+    FreeImage_DeInitialise();
+}
 
 // *****************************************************************************
+//
 
 void *dwrxNewTable(wrxState *p) {
 	oa_hash *ret = oa_hash_new(oa_key_ops_string, oa_val_ops_data, oa_hash_lp_idx);
