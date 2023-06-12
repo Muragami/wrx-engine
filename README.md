@@ -8,4 +8,5 @@ wrx-engine employs only common libraries which can be found in three main reposi
 * PhysFS
 * json-C
 * OpenGL
-* portaudio
+* opus
+* cairo
