@@ -15,7 +15,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include "../include/CImg.h"
+#define FREEIMAGE_LIB
+#include "FreeImage.h"
 
 // *****************************************************************************
 // hash table implementation from: https://github.com/nomemory/open-adressing-hash-table-c

@@ -10,3 +10,4 @@ wrx-engine employs only common libraries which can be found in three main reposi
 * OpenGL
 * opus
 * cairo
+* FreeImage
