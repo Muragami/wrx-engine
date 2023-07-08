@@ -2,12 +2,9 @@
 	wrx engine demo app
 ]]
 
-function wrx.start()
+function wrx.open()
 end
 
-function wrx.stop()
-end
-
-function wrx.update()
+function wrx.close()
 end
 

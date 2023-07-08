@@ -69,7 +69,7 @@ $(OBJS)socket.m.o: $(SRCS)socket.c
 	$(CC) $(CFLAGS) $(OPTFLAGS) $(IFLAGS) -c $(SRCS)socket.c -o $(OBJS)socket.m.o
 
 $(OBJS)audio.m.o: $(SRCS)audio.c
-	$(CC) $(CFLAGS) $(OPTFLAGS) -c $(SRCS)audio.c -o $(OBJS)audio.m.o
+	$(CC) $(CFLAGS) $(OPTFLAGS) $(IFLAGS) -c $(SRCS)audio.c -o $(OBJS)audio.m.o
 
 clean:
 	rm $(OBJS)*

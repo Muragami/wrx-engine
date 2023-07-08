@@ -8,6 +8,7 @@
 
 #include "wrx.h"
 #include <string.h>
+#include <stdlib.h>
 
 extern wrxState* _theState;
 
@@ -142,6 +143,7 @@ wrxMimeType wrxMimeTable[] = {
     { ".jpeg", "image/jpeg", "image" },
     { ".jpg", "image/jpeg", "image" },
     { ".json", "application/json", "application" },
+    { ".lua", "text/lua", "text" },
     { ".mid", "audio/midi", "audio" },
     { ".midi", "audio/midi", "audio" },
     { ".mp3", "audio/mpeg", "audio" },
